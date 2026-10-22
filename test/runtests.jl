@@ -1,5 +1,6 @@
 using Test
 using ESML
+using OrdinaryDiffEq
 
 const ROOT = normpath(joinpath(@__DIR__, ".."))
 
@@ -93,4 +94,22 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     ev = simulate_with_reset(doc; t_event=30.0, new_value=50.0, saveat=1.0)
     @test isapprox(ev.sol(30.1)[1], 49.756; atol=0.5)
     @test isapprox(ev.sol(60.0)[1], 11.1566; rtol=1e-3)
+
+    # 第 10 章：灵敏度（有限差分）。
+    sens = sensitivity(doc; param="lambda", relstep=1e-3)
+    @test isapprox(sens.value, -298.7; rtol=1e-2)
+    @test run_task(doc, :simulate) isa ESML.SimulationResult
+    @test_throws ErrorException run_task(doc, :optimize)
+
+    # 第 11 章：代码生成与数值接口。
+    cr = compile_rhs(doc)
+    @test cr.states == ["N"]
+    @test cr.params == ["lambda"]
+    @test rhs_at(cr, [100.0], [0.05]) == [-5.0]
+    out = zeros(1)
+    @test rhs_at!(out, cr, [100.0], [0.05]) == [-5.0]
+    # 三参数就地函数会被 SciML 误判为非就地；包装成四参数才是正确契约。
+    prob = ODEProblem(sci_rhs(cr), [100.0], (0.0, 60.0), [0.05])
+    sol = solve(prob, Tsit5(); saveat=60.0)
+    @test isapprox(sol.u[end][1], 4.9788; rtol=1e-3)
 end
