@@ -26,7 +26,7 @@ include("units.jl")
 include("system.jl")
 include("solve.jl")
 
-export Document, Parameter, State, parse_document
+export Document, Parameter, State, parse_document, ParseError
 export parse_unit, check_units, UnitReport, UnitIssue
 export parse_expr, compile_model
 export simulate, SimulationResult, final_state

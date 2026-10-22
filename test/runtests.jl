@@ -22,4 +22,14 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     result = simulate(doc; saveat=60.0)
     n60 = final_state(result, "N")
     @test isapprox(n60, 4.978422606072985; rtol=1e-3)
+
+    # 第 2 章：必需属性缺失必须响亮失败，并指出属性名。
+    err = try
+        parse_document(joinpath(ROOT, "examples", "decay_missing_name.esml"))
+        nothing
+    catch e
+        e
+    end
+    @test err isa ESML.ParseError
+    @test occursin("missing required attribute 'name'", sprint(showerror, err))
 end
