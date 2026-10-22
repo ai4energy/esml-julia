@@ -24,11 +24,13 @@ include("document.jl")
 include("expr.jl")
 include("units.jl")
 include("hir.jl")
+include("dimensions.jl")
 include("system.jl")
 include("solve.jl")
 
 export Document, Parameter, State, Instance, parse_document, ParseError
 export parse_unit, check_units, UnitReport, UnitIssue
+export check_dimensions, DimensionReport, DimensionIssue
 export parse_expr, build_hir, HIR, HirVar, HirParam, compile_model
 export simulate, SimulationResult, final_state
 

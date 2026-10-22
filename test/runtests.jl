@@ -49,4 +49,17 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
         "D(g__N) = -g__lambda * g__N",
         "D(h__N) = -h__lambda * h__N",
     ]
+
+    # 第 4 章：量纲检查（好例通过，坏例报两侧量纲）。
+    good = parse_document(joinpath(ROOT, "examples", "decay_units.esml"))
+    rgood = check_dimensions(good)
+    @test rgood.checked == 1
+    @test isempty(rgood.issues)
+
+    bad = parse_document(joinpath(ROOT, "examples", "decay_bad_units.esml"))
+    rbad = check_dimensions(bad)
+    @test rbad.checked == 1
+    @test length(rbad.issues) == 1
+    @test occursin("𝐓^-1", rbad.issues[1].message)
+    @test occursin("NoDims", rbad.issues[1].message)
 end
