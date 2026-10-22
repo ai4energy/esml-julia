@@ -1,0 +1,97 @@
+# 文档层：ESML XML → Document
+#
+# 只读取第 1 章需要的 subset：一个 modelType、参数、状态变量、方程、
+# 一个 system 与一个 simulate 任务。后面的章节在同一个 Document 上扩展。
+
+tag(n) = split(nodename(n), ":")[end]
+
+function children(n, name)
+    [c for c in elements(n) if tag(c) == name]
+end
+
+function first_child(n, name)
+    cs = children(n, name)
+    isempty(cs) ? nothing : cs[1]
+end
+
+function descendants(n, name)
+    out = Any[]
+    for c in elements(n)
+        tag(c) == name && push!(out, c)
+        append!(out, descendants(c, name))
+    end
+    out
+end
+
+attr(n, key, default="") = haskey(n, key) ? n[key] : default
+
+struct Parameter
+    name::String
+    default::Float64
+    unit::String
+end
+
+struct State
+    name::String
+    initial::Float64
+    unit::String
+end
+
+struct Document
+    name::String
+    model::String
+    params::Vector{Parameter}
+    states::Vector{State}
+    equations::Vector{String}
+    tspan::Tuple{Float64, Float64}
+    system::String
+end
+
+function parse_document(path::AbstractString)
+    doc = readxml(path)
+    docroot = root(doc)
+    types = Dict{String, String}()
+    for t in descendants(docroot, "type")
+        name = attr(t, "name")
+        isempty(name) && continue
+        types[name] = attr(t, "unit", "1")
+    end
+
+    model_node = first(descendants(docroot, "modelType"))
+    model = attr(model_node, "name")
+
+    params = Parameter[]
+    for p in descendants(model_node, "parameter")
+        name = attr(p, "name")
+        isempty(name) && continue
+        push!(params, Parameter(name, parse(Float64, attr(p, "default", "0.0")),
+                               get(types, attr(p, "type"), "1")))
+    end
+
+    states = State[]
+    for v in descendants(model_node, "variable")
+        name = attr(v, "name")
+        role = attr(v, "role", "algebraic")
+        role == "state" || continue
+        push!(states, State(name, parse(Float64, attr(v, "initial", "0.0")),
+                            get(types, attr(v, "type"), "1")))
+    end
+
+    equations = [strip(nodecontent(e)) for e in descendants(model_node, "equation")
+                 if !isempty(strip(nodecontent(e)))]
+
+    system_node = first(descendants(docroot, "system"))
+    system = attr(system_node, "name", "S")
+
+    tspan = (0.0, 1.0)
+    for task in descendants(docroot, "task")
+        kind = attr(task, "kind")
+        kind == "simulate" || continue
+        ts = first_child(task, "tspan")
+        ts === nothing || (tspan = (parse(Float64, attr(ts, "from", "0")),
+                                    parse(Float64, attr(ts, "to", "1"))))
+        break
+    end
+
+    Document(attr(docroot, "name"), model, params, states, equations, tspan, system)
+end

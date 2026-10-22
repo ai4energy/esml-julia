@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!-- 第 1 章最小算例：一个状态、一个参数、一条方程。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="DecayDemo">
+  <variableTypes>
+    <type name="real" unit="1" default="0.0" role="algebraic"/>
+  </variableTypes>
+  <modelTypes>
+    <modelType name="Decay" discipline="generic">
+      <parameters>
+        <parameter name="lambda" type="real" default="0.05"/>
+      </parameters>
+      <variables>
+        <variable name="N" type="real" role="state" initial="100.0"/>
+      </variables>
+      <equations>
+        <equation>D(N) = -lambda * N</equation>
+      </equations>
+    </modelType>
+  </modelTypes>
+  <systems>
+    <system name="S">
+      <instances><instance name="g" type="Decay"/></instances>
+    </system>
+  </systems>
+  <computeTasks name="run" target="S">
+    <task name="sim" kind="simulate">
+      <tspan from="0" to="60"/>
+    </task>
+  </computeTasks>
+</esml>

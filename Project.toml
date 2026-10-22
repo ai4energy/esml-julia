@@ -1,0 +1,15 @@
+name = "ESML"
+uuid = "26f0384f-fc20-4029-8bcb-a84e6ff7a995"
+authors = ["Mingtao Li <mingtao@xjtu.edu.cn>"]
+version = "0.1.0"
+
+[deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[compat]
+julia = "1.10"
