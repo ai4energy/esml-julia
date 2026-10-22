@@ -38,7 +38,15 @@ function build_hir(doc::Document)
     for inst in doc.instances
         inst.type == doc.model ||
             error("HIR: instance $(inst.name) has type $(inst.type), expected $(doc.model)")
-        prefix = inst.name * "__"
+        for k in 1:inst.count
+            prefix = inst.count == 1 ? inst.name * "__" : "$(inst.name)_$(k)__"
+            _expand_instance!(inst, prefix, doc, vars, params, equations)
+        end
+    end
+    HIR(doc.model, vars, params, equations)
+end
+
+function _expand_instance!(inst, prefix, doc, vars, params, equations)
         names = Pair{String,String}[]
         for s in doc.states
             path = prefix * s.name
@@ -51,6 +59,4 @@ function build_hir(doc::Document)
             push!(names, p.name => path)
         end
         append!(equations, [_rewrite_equation(eq, names) for eq in doc.equations])
-    end
-    HIR(doc.model, vars, params, equations)
 end

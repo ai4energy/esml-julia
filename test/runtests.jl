@@ -76,4 +76,11 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     ro = analyze_structure(over)
     @test ro.dof == -1
     @test ro.unmatched_eqs == [2]
+
+    # 第 6 章：数组实例展开为带下标的路径。
+    arr = parse_document(joinpath(ROOT, "examples", "array_decay.esml"))
+    @test arr.instances[1].count == 2
+    ha = build_hir(arr)
+    @test [v.path for v in ha.vars] == ["g_1__N", "g_2__N"]
+    @test length(ha.equations) == 2
 end

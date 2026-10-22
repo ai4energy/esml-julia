@@ -65,6 +65,7 @@ end
 struct Instance
     name::String
     type::String
+    count::Int
 end
 
 struct Document
@@ -124,7 +125,9 @@ function parse_document(path::AbstractString)
     for i in descendants(system_node, "instance")
         name = _require_attr(i, "name", path, "instance")
         typ = _require_attr(i, "type", path, "instance")
-        push!(instances, Instance(name, typ))
+        cnt = parse(Int, attr(i, "count", "1"))
+        cnt >= 1 || throw(ParseError(path, "instance", "count must be >= 1"))
+        push!(instances, Instance(name, typ, cnt))
     end
 
     tspan = (0.0, 1.0)
