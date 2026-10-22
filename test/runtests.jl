@@ -83,4 +83,9 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     ha = build_hir(arr)
     @test [v.path for v in ha.vars] == ["g_1__N", "g_2__N"]
     @test length(ha.equations) == 2
+
+    # 第 7 章：符号右端与导数。
+    sr = symbolic_rhs(doc)
+    @test string(sr.rhs) == "-N(t)*lambda"
+    @test string(symbolic_derivative(doc, "N")) == "-lambda"
 end
