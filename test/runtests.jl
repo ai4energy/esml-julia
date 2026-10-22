@@ -88,4 +88,9 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     sr = symbolic_rhs(doc)
     @test string(sr.rhs) == "-N(t)*lambda"
     @test string(symbolic_derivative(doc, "N")) == "-lambda"
+
+    # 第 9 章：一个时间事件 + 复位。
+    ev = simulate_with_reset(doc; t_event=30.0, new_value=50.0, saveat=1.0)
+    @test isapprox(ev.sol(30.1)[1], 49.756; atol=0.5)
+    @test isapprox(ev.sol(60.0)[1], 11.1566; rtol=1e-3)
 end
