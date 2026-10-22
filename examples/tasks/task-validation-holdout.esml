@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- Author: Mingtao Li <mingtao@xjtu.edu.cn> -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- 语法点 validation 任务：`<task kind="validation">`，载荷为 `<tspan/>`、
+     `<metrics><metric name/></metrics>` 与**内联** `<samples>`，计算模型与观测的 R² / RMSE。
+     规范条文：§6.9（计算任务表）。
+     `tasks`（system S）⇒ ValidationResult{r2 ≈ 0.9999} exit=0。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="T_ValidationHoldout">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="DecayModel" discipline="generic">
+    <parameters><parameter name="lambda" type="real" default="0.05"/></parameters>
+    <variables><variable name="N" type="real" role="state" initial="100.0"/></variables>
+    <equations><equation>D(N) = -lambda * N</equation></equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="DecayModel"/></instances>
+    <schedule><sequence><continueFor time="60"/></sequence></schedule>
+  </system></systems>
+  <computeTasks name="t-val" target="S">
+    <task name="val" kind="validation">
+      <tspan from="0" to="60"/>
+      <metrics><metric name="R2"/><metric name="RMSE"/></metrics>
+      <samples>
+        <sample x="15" y="47.236"/>
+        <sample x="45" y="10.551"/>
+      </samples>
+    </task>
+  </computeTasks>
+</esml>

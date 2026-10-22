@@ -7,10 +7,28 @@ struct SimulationResult
     params::Dict{String, Any}
 end
 
-function simulate(doc::Document; tspan=doc.tspan, saveat=1.0, param_overrides=Dict{String,Float64}())
+"""Simulate one model with optional parameter / state overrides.
+
+`state_overrides` is used by the control and estimation executors, which need
+to restart from a measured (not the declared initial) state.
+"""
+function simulate(doc::Document; tspan=doc.tspan, saveat=1.0,
+                  param_overrides=Dict{String,Float64}(),
+                  state_overrides=Dict{String,Float64}())
     c = compile_model(doc)
-    u0 = Dict(c.states[s.name] => s.initial for s in doc.states)
-    p = Dict(c.params[p.name] => get(param_overrides, p.name, p.default) for p in doc.params)
+    _simulate_compiled(c, doc; tspan=tspan, saveat=saveat,
+                       param_overrides=param_overrides,
+                       state_overrides=state_overrides)
+end
+
+"""Reuse an already-compiled system (avoids re-running MTK for every trial)."""
+function _simulate_compiled(c, doc::Document; tspan, saveat,
+                            param_overrides=Dict{String,Float64}(),
+                            state_overrides=Dict{String,Float64}())
+    u0 = Dict(c.states[s.name] => get(state_overrides, s.name, s.initial)
+              for s in doc.states)
+    p = Dict(c.params[pp.name] => get(param_overrides, pp.name, pp.default)
+             for pp in doc.params)
     prob = ODEProblem(c.sys, merge(u0, p), tspan)
     sol = solve(prob, Tsit5(); saveat=saveat)
     SimulationResult(sol, c.sys, c.states, c.params)

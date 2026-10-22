@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!-- Author: Mingtao Li <mingtao@xjtu.edu.cn> -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- 语法点 simulate 任务：`<computeTasks name target><task kind="simulate">`，
+     载荷为 `<tspan from to/>` 与 `<solver name/>`。
+     规范条文：§6.9（计算任务表）。
+     `tasks`（system S）⇒ Simulate 轨迹 exit=0（N(t) = 100·e^(−0.05t)）。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="T_Simulate">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="DecayModel" discipline="generic">
+    <parameters><parameter name="lambda" type="real" default="0.05"/></parameters>
+    <variables><variable name="N" type="real" role="state" initial="100.0"/></variables>
+    <equations><equation>D(N) = -lambda * N</equation></equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="DecayModel"/></instances>
+    <schedule><sequence><continueFor time="60"/></sequence></schedule>
+  </system></systems>
+  <computeTasks name="t-sim" target="S">
+    <task name="sim" kind="simulate">
+      <tspan from="0" to="60"/>
+      <solver name="Tsit5"/>
+    </task>
+  </computeTasks>
+</esml>

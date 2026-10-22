@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!-- Author: Mingtao Li <mingtao@xjtu.edu.cn> -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- 语法点 control 任务（MPC）：`<task kind="control">`，载荷为 `<mpc N dt/>` 加
+     `<estimate name initial/>`（initial 给输入路径与设定点）。
+     规范条文：§6.9（计算任务表）。
+     `tasks`（system S）⇒ ControlResult{u = […] } exit=0。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="T_Control">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="DecayModel" discipline="generic">
+    <parameters><parameter name="lambda" type="real" default="0.05"/></parameters>
+    <variables><variable name="N" type="real" role="state" initial="100.0"/></variables>
+    <equations><equation>D(N) = -lambda * N</equation></equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="DecayModel"/></instances>
+    <schedule><sequence><continueFor time="60"/></sequence></schedule>
+  </system></systems>
+  <computeTasks name="t-mpc" target="S">
+    <task name="mpc" kind="control">
+      <mpc N="10" dt="1"/>
+      <estimate name="g.lambda" initial="1.0"/>
+    </task>
+  </computeTasks>
+</esml>

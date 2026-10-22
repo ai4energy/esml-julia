@@ -14,6 +14,8 @@ using Symbolics
 using ModelingToolkit
 using OrdinaryDiffEq
 using DifferentialEquations
+using Statistics
+using LinearAlgebra
 
 import ModelingToolkit: @variables, @independent_variables, Differential,
                          ODESystem, structural_simplify, ODEProblem
@@ -40,7 +42,7 @@ export analyze_structure, StructureReport
 export symbolic_rhs, symbolic_derivative, simulate_with_reset
 export parse_expr, build_hir, HIR, HirVar, HirParam, compile_model
 export simulate, SimulationResult, final_state
-export TaskSpec, sensitivity, run_task
+export TaskSpec, sensitivity, run_task, run_tasks, eval_ast
 export CompiledRHS, compile_rhs, rhs_at, rhs_at!, rhs_inputs, sci_rhs
 
 end # module

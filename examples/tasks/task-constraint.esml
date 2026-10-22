@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!-- Author: Mingtao Li <mingtao@xjtu.edu.cn> -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- 语法点 optimize 任务的不等式约束对照例：同一目标 min (x − 3)²、x ∈ [0, 10]，
+     两个任务各带一条不等式约束。
+       · optc（绑定）：x ≥ 5.0 把解从无约束最优 x = 3 推到边界 ⇒ x = 5.0、objective = 4.0。
+       · optc_nb（非绑定）：x ≥ 2.0 不触及最优 ⇒ 解保持 x = 3.0、objective ≈ 0
+         （非绑定约束只罚违约量，不把解拉向边界）。
+     `tasks`（system S，依次跑文档内全部任务）：optc x = 5.0 / obj = 4.0 ·
+     规范条文：§6.9（计算任务表）。
+     optc_nb x = 3.0 / obj ≈ 0 · exit=0。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="T_Constraint">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="DecayModel" discipline="generic">
+    <parameters><parameter name="lambda" type="real" default="0.05"/></parameters>
+    <variables><variable name="N" type="real" role="state" initial="100.0"/></variables>
+    <equations><equation>D(N) = -lambda * N</equation></equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="DecayModel"/></instances>
+    <schedule><sequence><continueFor time="60"/></sequence></schedule>
+  </system></systems>
+  <computeTasks name="t-con" target="S">
+    <task name="optc" kind="optimize">
+      <tspan from="0" to="60"/>
+      <decision name="x" lower="0.0" upper="10.0"/>
+      <objective direction="min">(x-3)^2</objective>
+      <constraints>
+        <constraint>x &gt;= 5.0</constraint>
+      </constraints>
+    </task>
+    <task name="optc_nb" kind="optimize">
+      <tspan from="0" to="60"/>
+      <decision name="x" lower="0.0" upper="10.0"/>
+      <objective direction="min">(x-3)^2</objective>
+      <constraints>
+        <constraint>x &gt;= 2.0</constraint>
+      </constraints>
+    </task>
+  </computeTasks>
+</esml>

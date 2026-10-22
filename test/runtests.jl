@@ -112,4 +112,48 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     prob = ODEProblem(sci_rhs(cr), [100.0], (0.0, 60.0), [0.05])
     sol = solve(prob, Tsit5(); saveat=60.0)
     @test isapprox(sol.u[end][1], 4.9788; rtol=1e-3)
+
+    # 105 卷闭环：十种任务（七类问题类 + 三个辅助任务）
+    T105 = joinpath(ROOT, "examples", "tasks")
+    d7 = parse_document(joinpath(T105, "tasks-seven.esml"))
+    @test length(d7.tasks) == 7
+    @test [t.kind for t in d7.tasks] ==
+          ["simulate", "sensitivity", "estimation", "validation",
+           "optimize", "control", "surrogate"]
+    @test isapprox(final_state(run_task(d7, :simulate), "N"), 4.9788; rtol=1e-3)
+    r_sens = run_task(d7, :sensitivity)
+    @test isapprox(r_sens.plus.sol.u[end][1], 3.6884; rtol=1e-2)
+    @test isapprox(r_sens.minus.sol.u[end][1], 6.7206; rtol=1e-2)
+    r_est = run_task(d7, :estimation)
+    @test isapprox(r_est.theta[1], 0.05; rtol=2e-2)
+    r_opt = run_task(d7, :optimize)
+    @test isapprox(r_opt.x[1], 3.0; atol=1e-3)
+    @test r_opt.feasible
+    r_ctl = run_task(d7, :control)
+    @test isapprox(r_ctl.x[end], 1.0; atol=0.02)
+    @test isapprox(r_ctl.u[1], 4.605; rtol=2e-2)
+    r_dd = run_task(d7, :surrogate)
+    @test isapprox(r_dd.coeffs, [1.0, 2.0, 3.0]; atol=1e-6)
+    @test isapprox(r_dd.r2, 1.0; atol=1e-8)
+    r_val = run_task(d7, :validation)
+    @test r_val.r2 > 0.9999
+    r_aux = run_task(parse_document(joinpath(T105, "tasks-auxiliary.esml")), :forecast)
+    @test isapprox(r_aux.extrapolated[1][2], 92.7743; rtol=1e-3)
+    r_data = run_task(parse_document(joinpath(T105, "tasks-auxiliary.esml")), :data)
+    @test r_data.count == 5
+    @test isapprox(r_data.mean, 3.0; atol=1e-9)
+    @test isapprox(r_data.std, 1.41421356; rtol=1e-6)
+    r_dec = run_task(parse_document(joinpath(T105, "tasks-auxiliary.esml")), :decision)
+    @test r_dec.chosen == "c2"
+    @test r_dec.value == 50.0
+    dall = parse_document(joinpath(T105, "tasks-all.esml"))
+    @test length(dall.tasks) == 10
+    @test [t.kind for t in dall.tasks] ==
+          ["simulate", "sensitivity", "estimation", "validation", "optimize",
+           "control", "surrogate", "forecast", "data", "decision"]
+    dcon = parse_document(joinpath(T105, "task-constraint.esml"))
+    cons = run_tasks(dcon)
+    @test isapprox(cons[1].x[1], 5.0; atol=1e-3)
+    @test isapprox(cons[2].x[1], 3.0; atol=1e-3)
+    @test_throws ErrorException run_task(d7, :unknown)
 end

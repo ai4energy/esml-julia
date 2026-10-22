@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<!-- Author: Mingtao Li <mingtao@xjtu.edu.cn> -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- 语法点 七类问题类计算任务：`<computeTasks name target><task name kind>…载荷…</task></computeTasks>`。
+     模型面与任务面同处一个 `<esml>` 根；独立文档须以 `<esml>` 为根。
+     `tasks`（system S）七类问题类全部实跑 exit=0：
+       simulate → 轨迹 · sensitivity → ±fraction 摄动结果 ·
+       estimation → EstimationResult{theta = [0.0500…]}（内联样本拟合 g.lambda）·
+       validation → ValidationResult{r2 = 0.9999…} ·
+       optimize → OptimizationResult{x = [3.0], feasible} ·
+       control → ControlResult{u = […]} ·
+       surrogate → SurrogateResult{coeffs = [1,2,3], r2 = 1.0}（复原 y = 1 + 2x + 3x²）。
+     载荷要求：estimation / validation / surrogate 须**内联** `<samples><sample x y/>`；
+     optimize 须 `<tspan>`；control 须 `<mpc N dt/>` 加 `<estimate name initial/>`。
+     规范条文：§6.9（计算任务表）；辅助任务见 `tasks-auxiliary.esml`。
+     本例只使用实现已接受的属性。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="L9_TasksAll">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="DecayModel" discipline="generic">
+    <parameters><parameter name="lambda" type="real" default="0.05"/></parameters>
+    <variables><variable name="N" type="real" role="state" initial="100.0"/></variables>
+    <equations><equation>D(N) = -lambda * N</equation></equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="DecayModel"/></instances>
+    <schedule><sequence><continueFor time="60"/></sequence></schedule>
+  </system></systems>
+  <computeTasks name="all-tasks" target="S">
+    <task name="sim" kind="simulate">
+      <tspan from="0" to="60"/>
+      <solver name="Tsit5"/>
+    </task>
+    <task name="sens" kind="sensitivity">
+      <tspan from="0" to="60"/>
+      <perturb name="g.lambda" fraction="0.1"/>
+    </task>
+    <task name="est" kind="estimation">
+      <tspan from="0" to="60"/>
+      <estimate name="g.lambda" initial="0.05"/>
+      <data source="syntax/decay_data.csv" cols="t,N" format="csv"/>
+      <samples>
+        <sample x="0" y="100"/>
+        <sample x="30" y="22.3"/>
+        <sample x="60" y="4.98"/>
+      </samples>
+    </task>
+    <task name="val" kind="validation">
+      <tspan from="0" to="60"/>
+      <metrics><metric name="R2"/><metric name="RMSE"/></metrics>
+      <samples>
+        <sample x="0" y="100"/>
+        <sample x="30" y="22.3"/>
+        <sample x="60" y="4.98"/>
+      </samples>
+    </task>
+    <task name="opt" kind="optimize">
+      <tspan from="0" to="60"/>
+      <decision name="x" lower="0" upper="10"/>
+      <objective direction="min">(x-3)^2</objective>
+    </task>
+    <task name="mpc" kind="control">
+      <mpc N="10" dt="1"/>
+      <estimate name="g.lambda" initial="1.0"/>
+    </task>
+    <task name="dd" kind="surrogate">
+      <surrogate method="lsq" degree="2"/>
+      <samples>
+        <sample x="-1.0" y="2.0"/>
+        <sample x="0.0" y="1.0"/>
+        <sample x="1.0" y="6.0"/>
+      </samples>
+    </task>
+    <task name="fcast" kind="forecast">
+      <tspan from="0" to="1"/>
+      <estimate name="g.N" initial="0.0"/>
+      <mpc N="3" dt="0.5"/>
+    </task>
+    <task name="summary" kind="data">
+      <samples>
+        <sample x="0" y="1"/><sample x="0" y="2"/><sample x="0" y="3"/>
+        <sample x="0" y="4"/><sample x="0" y="5"/>
+      </samples>
+    </task>
+    <task name="pick" kind="decision">
+      <decision name="c1" lower="100" upper="100"/>
+      <decision name="c2" lower="50" upper="50"/>
+      <decision name="c3" lower="75" upper="75"/>
+      <objective direction="min">min</objective>
+    </task>
+  </computeTasks>
+</esml>

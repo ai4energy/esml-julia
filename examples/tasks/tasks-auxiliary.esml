@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!-- Author: Mingtao Li <mingtao@xjtu.edu.cn> -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- 语法点 三个辅助任务：forecast / data / decision。
+     它们不占七类问题类编号，也不引入新的求解角色：
+       forecast → 先仿真基线，再对时间轴外推（surrogate 的时间轴特例）；
+       data     → 对内联样本做摘要统计（count/min/max/mean/std/median）；
+       decision → 从候选集选最优（单目标；两目标时给 Pareto 前沿）。
+     七类问题类见 `tasks-seven.esml`。
+     规范条文：§6.9（计算任务表）与附录 M（任务层口径）。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="L9_TasksAuxiliary">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="DecayModel" discipline="generic">
+    <parameters><parameter name="lambda" type="real" default="0.05"/></parameters>
+    <variables><variable name="N" type="real" role="state" initial="100.0"/></variables>
+    <equations><equation>D(N) = -lambda * N</equation></equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="DecayModel"/></instances>
+    <schedule><sequence><continueFor time="60"/></sequence></schedule>
+  </system></systems>
+  <computeTasks name="aux-tasks" target="S">
+    <task name="fcast" kind="forecast">
+      <tspan from="0" to="1"/>
+      <estimate name="g.N" initial="0.0"/>
+      <mpc N="3" dt="0.5"/>
+    </task>
+    <task name="summary" kind="data">
+      <samples>
+        <sample x="0" y="1"/>
+        <sample x="0" y="2"/>
+        <sample x="0" y="3"/>
+        <sample x="0" y="4"/>
+        <sample x="0" y="5"/>
+      </samples>
+    </task>
+    <task name="pick" kind="decision">
+      <decision name="c1" lower="100" upper="100"/>
+      <decision name="c2" lower="50" upper="50"/>
+      <decision name="c3" lower="75" upper="75"/>
+      <objective direction="min">min</objective>
+    </task>
+  </computeTasks>
+</esml>
