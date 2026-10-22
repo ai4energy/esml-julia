@@ -32,4 +32,21 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     end
     @test err isa ESML.ParseError
     @test occursin("missing required attribute 'name'", sprint(showerror, err))
+
+    # 第 3 章：实例 → 路径；方程里的名字被改写成路径。
+    hir = build_hir(doc)
+    @test length(hir.vars) == 1
+    @test hir.vars[1].path == "g__N"
+    @test length(hir.params) == 1
+    @test hir.params[1].path == "g__lambda"
+    @test hir.equations == ["D(g__N) = -g__lambda * g__N"]
+
+    two = parse_document(joinpath(ROOT, "examples", "two_decay.esml"))
+    hir2 = build_hir(two)
+    @test [v.path for v in hir2.vars] == ["g__N", "h__N"]
+    @test [p.path for p in hir2.params] == ["g__lambda", "h__lambda"]
+    @test hir2.equations == [
+        "D(g__N) = -g__lambda * g__N",
+        "D(h__N) = -h__lambda * h__N",
+    ]
 end

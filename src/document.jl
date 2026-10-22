@@ -62,6 +62,11 @@ struct State
     unit::String
 end
 
+struct Instance
+    name::String
+    type::String
+end
+
 struct Document
     name::String
     model::String
@@ -70,6 +75,7 @@ struct Document
     equations::Vector{String}
     tspan::Tuple{Float64, Float64}
     system::String
+    instances::Vector{Instance}
 end
 
 function parse_document(path::AbstractString)
@@ -114,6 +120,13 @@ function parse_document(path::AbstractString)
     _check_children(system_node, ["instances"], path, "system")
     system = attr(system_node, "name", "S")
 
+    instances = Instance[]
+    for i in descendants(system_node, "instance")
+        name = _require_attr(i, "name", path, "instance")
+        typ = _require_attr(i, "type", path, "instance")
+        push!(instances, Instance(name, typ))
+    end
+
     tspan = (0.0, 1.0)
     for task in descendants(docroot, "task")
         _check_children(task, ["tspan"], path, "task")
@@ -125,5 +138,5 @@ function parse_document(path::AbstractString)
         break
     end
 
-    Document(attr(docroot, "name"), model, params, states, equations, tspan, system)
+    Document(attr(docroot, "name"), model, params, states, equations, tspan, system, instances)
 end
