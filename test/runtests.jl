@@ -62,4 +62,18 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     @test length(rbad.issues) == 1
     @test occursin("𝐓^-1", rbad.issues[1].message)
     @test occursin("NoDims", rbad.issues[1].message)
+
+    # 第 5 章：自由度与匹配。
+    @test analyze_structure(build_hir(doc)).dof == 0
+    @test isempty(analyze_structure(build_hir(doc)).unmatched_vars)
+
+    under = build_hir(parse_document(joinpath(ROOT, "examples", "under.esml")))
+    ru = analyze_structure(under)
+    @test ru.dof == 1
+    @test ru.unmatched_vars == ["g__M"]
+
+    over = build_hir(parse_document(joinpath(ROOT, "examples", "over.esml")))
+    ro = analyze_structure(over)
+    @test ro.dof == -1
+    @test ro.unmatched_eqs == [2]
 end
