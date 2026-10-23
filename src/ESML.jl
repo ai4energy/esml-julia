@@ -32,6 +32,7 @@ include("symbolic.jl")
 include("discrete.jl")
 include("tasks.jl")
 include("system.jl")
+include("components.jl")
 include("solve.jl")
 include("codegen.jl")
 
@@ -41,7 +42,7 @@ export check_dimensions, DimensionReport, DimensionIssue
 export analyze_structure, StructureReport
 export symbolic_rhs, symbolic_derivative, simulate_with_reset
 export parse_expr, build_hir, HIR, HirVar, HirParam, compile_model
-export simulate, SimulationResult, final_state, solve_steady
+export simulate, SimulationResult, final_state, solve_steady, build_residual, assemble_components
 export TaskSpec, sensitivity, run_task, run_tasks, eval_ast
 export CompiledRHS, compile_rhs, rhs_at, rhs_at!, rhs_inputs, sci_rhs
 

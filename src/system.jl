@@ -90,3 +90,36 @@ function solve_steady(doc::Document; tol::Float64=1e-10, maxiter::Int=50)
     return (values = Dict(a.name => x[i] for (i, a) in enumerate(doc.algebraics)),
             residual = rn, iterations = iters, converged = rn < tol)
 end
+
+"""
+    build_residual(doc) -> NamedTuple
+
+公开残差/Jacobian 契约（纯代数模型）：
+`(names, pnames, u0, p0, residual, jacobian)`。
+`residual(x,p)` 返回 `Vector{Float64}`，`jacobian(x,p)` 返回矩阵。
+"""
+function build_residual(doc::Document)
+    isempty(doc.algebraics) && error("build_residual: 模型没有代数变量")
+    isempty(doc.states) || error("build_residual: 纯代数接口不接收状态变量")
+    vars = Dict{String, Any}(a.name => Symbolics.variable(Symbol(a.name)) for a in doc.algebraics)
+    params = Dict{String, Any}(p.name => _param_variable(p.name) for p in doc.params)
+    vlist = [vars[a.name] for a in doc.algebraics]
+    plist = [params[p.name] for p in doc.params]
+    res = Any[]
+    for text in doc.equations
+        parts = split(text, "="; limit=2)
+        length(parts) == 2 || error("equation must contain '=': $text")
+        lhs = to_symbolic(parse_expr(strip(parts[1])), vars, params, _T)
+        rhs = to_symbolic(parse_expr(strip(parts[2])), vars, params, _T)
+        push!(res, lhs - rhs)
+    end
+    jac = Symbolics.jacobian(res, vlist)
+    f = Symbolics.build_function(res, vlist, plist; expression=Val(false))[1]
+    jf = Symbolics.build_function(jac, vlist, plist; expression=Val(false))[1]
+    return (names = [a.name for a in doc.algebraics],
+            pnames = [p.name for p in doc.params],
+            u0 = Float64[a.initial for a in doc.algebraics],
+            p0 = Float64[p.default for p in doc.params],
+            residual = (x, p = Float64[p.default for p in doc.params]) -> Float64.(f(x, p)),
+            jacobian = (x, p = Float64[p.default for p in doc.params]) -> Float64.(jf(x, p)))
+end
