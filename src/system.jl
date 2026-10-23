@@ -42,3 +42,51 @@ function compile_model(doc::Document)
     sys = structural_simplify(sys)
     (sys=sys, states=allvars, params=params, t=t)
 end
+
+# =============================================================================
+# 纯代数稳态：无状态模型 → Newton
+# =============================================================================
+"""
+    solve_steady(doc; tol=1e-10, maxiter=50) -> NamedTuple
+
+纯代数模型（`doc.states` 为空、`doc.algebraics` 非空）的稳态解：
+把每条方程写成残差 `lhs-rhs`，用 Symbolics 生成残差/Jacobian，
+再做阻尼 Newton。教学用最小实现，不处理欠定/超定。
+"""
+function solve_steady(doc::Document; tol::Float64=1e-10, maxiter::Int=50)
+    isempty(doc.algebraics) && error("solve_steady: 模型没有代数变量")
+    isempty(doc.states) || error("solve_steady: 模型含状态变量，请用 simulate")
+    vars = Dict{String, Any}(a.name => Symbolics.variable(Symbol(a.name)) for a in doc.algebraics)
+    params = Dict{String, Any}(p.name => _param_variable(p.name) for p in doc.params)
+    vlist = [vars[a.name] for a in doc.algebraics]
+    plist = [params[p.name] for p in doc.params]
+    eqs = Symbolics.Equation[]
+    for text in doc.equations
+        parts = split(text, "="; limit=2)
+        length(parts) == 2 || error("equation must contain '=': $text")
+        lhs = to_symbolic(parse_expr(strip(parts[1])), vars, params, _T)
+        rhs = to_symbolic(parse_expr(strip(parts[2])), vars, params, _T)
+        push!(eqs, lhs ~ rhs)
+    end
+    res = [e.lhs - e.rhs for e in eqs]
+    jac = Symbolics.jacobian(res, vlist)
+    f = Symbolics.build_function(res, vlist, plist; expression=Val(false))[1]
+    jf = Symbolics.build_function(jac, vlist, plist; expression=Val(false))[1]
+    x = Float64[a.initial for a in doc.algebraics]
+    p = Float64[pp.default for pp in doc.params]
+    iters = 0; rn = Inf
+    for k in 1:maxiter
+        iters = k
+        r = Float64.(f(x, p)); J = Float64.(jf(x, p))
+        rn = maximum(abs, r)
+        rn < tol && break
+        dx = -(J \ r)
+        α = 1.0
+        while α > 1e-4 && maximum(abs, Float64.(f(x .+ α .* dx, p))) >= rn
+            α /= 2
+        end
+        x .+= α .* dx
+    end
+    return (values = Dict(a.name => x[i] for (i, a) in enumerate(doc.algebraics)),
+            residual = rn, iterations = iters, converged = rn < tol)
+end
