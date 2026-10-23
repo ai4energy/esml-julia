@@ -90,6 +90,7 @@ struct Document
     model::String
     params::Vector{Parameter}
     states::Vector{State}
+    algebraics::Vector{State}
     equations::Vector{String}
     tspan::Tuple{Float64, Float64}
     system::String
@@ -124,12 +125,13 @@ function parse_document(path::AbstractString)
     end
 
     states = State[]
+    algebraics = State[]
     for v in descendants(model_node, "variable")
         name = _require_attr(v, "name", path, "variable")
         role = attr(v, "role", "algebraic")
-        role == "state" || continue
-        push!(states, State(name, parse(Float64, attr(v, "initial", "0.0")),
-                            get(types, attr(v, "type"), "1")))
+        st = State(name, parse(Float64, attr(v, "initial", "0.0")),
+                   get(types, attr(v, "type"), "1"))
+        role == "state" ? push!(states, st) : push!(algebraics, st)
     end
 
     equations = [strip(nodecontent(e)) for e in descendants(model_node, "equation")
@@ -216,6 +218,6 @@ function parse_document(path::AbstractString)
         end
     end
 
-    Document(attr(docroot, "name"), model, params, states, equations, tspan,
+    Document(attr(docroot, "name"), model, params, states, algebraics, equations, tspan,
              system, instances, tasks)
 end

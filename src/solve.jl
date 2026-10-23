@@ -27,10 +27,14 @@ function _simulate_compiled(c, doc::Document; tspan, saveat,
                             state_overrides=Dict{String,Float64}())
     u0 = Dict(c.states[s.name] => get(state_overrides, s.name, s.initial)
               for s in doc.states)
+    for a in doc.algebraics
+        u0[c.states[a.name]] = get(state_overrides, a.name, a.initial)
+    end
     p = Dict(c.params[pp.name] => get(param_overrides, pp.name, pp.default)
              for pp in doc.params)
     prob = ODEProblem(c.sys, merge(u0, p), tspan)
-    sol = solve(prob, Tsit5(); saveat=saveat)
+    alg = isempty(doc.algebraics) ? Tsit5() : Rodas5P()
+    sol = solve(prob, alg; saveat=saveat)
     SimulationResult(sol, c.sys, c.states, c.params)
 end
 

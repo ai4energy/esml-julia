@@ -19,6 +19,11 @@ function compile_model(doc::Document)
     for s in doc.states
         states[s.name] = _state_variable(s.name)
     end
+    algebraics = Dict{String, Any}()
+    for a in doc.algebraics
+        algebraics[a.name] = _state_variable(a.name)
+    end
+    allvars = merge(states, algebraics)
     params = Dict{String, Any}()
     for p in doc.params
         params[p.name] = _param_variable(p.name)
@@ -28,12 +33,12 @@ function compile_model(doc::Document)
     for text in doc.equations
         parts = split(text, "="; limit=2)
         length(parts) == 2 || error("equation must contain '=': $text")
-        lhs = to_symbolic(parse_expr(strip(parts[1])), states, params, t)
-        rhs = to_symbolic(parse_expr(strip(parts[2])), states, params, t)
+        lhs = to_symbolic(parse_expr(strip(parts[1])), allvars, params, t)
+        rhs = to_symbolic(parse_expr(strip(parts[2])), allvars, params, t)
         push!(equations, lhs ~ rhs)
     end
 
     sys = ODESystem(equations, t; name=:S)
     sys = structural_simplify(sys)
-    (sys=sys, states=states, params=params, t=t)
+    (sys=sys, states=allvars, params=params, t=t)
 end
