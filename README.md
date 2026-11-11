@@ -18,7 +18,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. test/runtests.jl
 ```
 
-本版测试：**73 passed / 0 failed**。
+本版测试：**86 passed / 0 failed**。
 
 单份算例：
 

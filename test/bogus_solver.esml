@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- 测试夹具：simulate 任务声明未知求解器名——任务层必须响亮报错，
+     而不是静默回退到默认求解器。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="BogusSolver">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="Decay" discipline="generic">
+    <parameters><parameter name="lambda" type="real" default="0.05"/></parameters>
+    <variables><variable name="N" type="real" role="state" initial="100.0"/></variables>
+    <equations><equation>D(N) = -lambda * N</equation></equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="Decay"/></instances>
+  </system></systems>
+  <computeTasks name="t" target="S">
+    <task name="sim" kind="simulate">
+      <tspan from="0" to="10"/>
+      <solver name="Bogus"/>
+    </task>
+  </computeTasks>
+</esml>

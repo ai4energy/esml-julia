@@ -12,6 +12,22 @@ function _default_param(doc::Document, name::AbstractString)
     error("unknown parameter $name")
 end
 
+"""Map a task's `<solver name/>` to a SciML algorithm; `nothing` = default.
+
+The reference only names the solvers the examples use; any other name is an
+error rather than a silent fallback to the default."""
+function _solver_alg(name::Union{Nothing, String})
+    name === nothing && return nothing
+    name == "Tsit5" && return OrdinaryDiffEq.Tsit5()
+    name == "Rodas5P" && return OrdinaryDiffEq.Rodas5P()
+    name == "SSPRK4" && return OrdinaryDiffEq.SSPRK4()
+    name == "ExplicitRK" && return OrdinaryDiffEq.ExplicitRK()
+    name == "ImplicitEuler" && return OrdinaryDiffEq.ImplicitEuler()
+    name == "ImplicitRK" && return OrdinaryDiffEq.ImplicitRK()
+    error("unknown solver '$name' (known: Tsit5, Rodas5P, SSPRK4, " *
+          "ExplicitRK, ImplicitEuler, ImplicitRK)")
+end
+
 # --- expression evaluation (for the independent optimize objective) ---
 
 function eval_ast(ast, env::Dict{String, Float64})
@@ -40,7 +56,8 @@ end
 
 function task_simulate(doc::Document, t::TaskSpec)
     tspan = t.tspan === nothing ? doc.tspan : t.tspan
-    r = simulate(doc; tspan=tspan, saveat=(tspan[2] - tspan[1]) / 200)
+    r = simulate(doc; tspan=tspan, saveat=(tspan[2] - tspan[1]) / 200,
+                 solver=_solver_alg(t.solver))
     (kind=:simulate, result=r)
 end
 

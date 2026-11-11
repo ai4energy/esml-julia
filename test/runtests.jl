@@ -157,3 +157,36 @@ const ROOT = normpath(joinpath(@__DIR__, ".."))
     @test isapprox(cons[2].x[1], 3.0; atol=1e-3)
     @test_throws ErrorException run_task(d7, :unknown)
 end
+
+@testset "ESML.jl · 代数链与显式求解器" begin
+    alg = parse_document(joinpath(ROOT, "test", "algebraic.esml"))
+
+    # 纯代数稳态：x+y=1, x-y=a*0.5（a=1）⇒ x=0.75, y=0.25。
+    st = solve_steady(alg)
+    @test st.converged
+    @test isapprox(st.values["x"], 0.75; atol=1e-9)
+    @test isapprox(st.values["y"], 0.25; atol=1e-9)
+
+    # 公开残差/Jacobian 契约：解点处为零，初值处已知，雅可比解析式。
+    b = build_residual(alg)
+    @test b.names == ["x", "y"] && b.pnames == ["a"]
+    @test isapprox(b.residual([0.75, 0.25]), [0.0, 0.0]; atol=1e-12)
+    @test isapprox(b.residual(b.u0), [0.0, 0.5]; atol=1e-12)
+    @test isapprox(b.jacobian([0.75, 0.25]), [1.0 1.0; 1.0 -1.0]; atol=1e-12)
+
+    # 多实例无连接装配：同一系统装进实例 g，路径带前缀。
+    ac = assemble_components(joinpath(ROOT, "test", "algebraic.esml"))
+    @test ac.converged
+    @test ac.nvars == 2
+    @test isapprox(ac.values["g__x"], 0.75; atol=1e-9)
+    @test isapprox(ac.values["g__y"], 0.25; atol=1e-9)
+
+    # simulate 的显式求解器（SciML 算法对象）。
+    doc = parse_document(joinpath(ROOT, "examples", "decay.esml"))
+    r = simulate(doc; saveat=60.0, solver=Tsit5())
+    @test isapprox(final_state(r, "N"), 4.978422606072985; rtol=1e-3)
+
+    # 任务层 <solver name>：未知名字必须响亮报错，不静默回退。
+    bogus = parse_document(joinpath(ROOT, "test", "bogus_solver.esml"))
+    @test_throws ErrorException run_task(bogus, :simulate)
+end

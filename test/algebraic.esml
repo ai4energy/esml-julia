@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- 测试夹具：纯代数两变量良态线性系统 x+y=1, x-y=a*0.5（a=1 ⇒ x=0.75, y=0.25）。
+     覆盖 solve_steady / build_residual / assemble_components 的代数链。
+     刻意避开退化（约束相切）系统：Newton 应一步到机器精度。 -->
+<esml xmlns="https://www.ai4energy.cn/esml/v1" schema="esml/v1" name="AlgRef">
+  <variableTypes><type name="real" unit="1" default="0.0" role="algebraic"/></variableTypes>
+  <modelTypes><modelType name="Quad" discipline="generic">
+    <parameters><parameter name="a" type="real" default="1.0"/></parameters>
+    <variables>
+      <variable name="x" type="real" role="algebraic" initial="1.0"/>
+      <variable name="y" type="real" role="algebraic" initial="0.0"/>
+    </variables>
+    <equations>
+      <equation>x + y = 1.0</equation>
+      <equation>x - y = a * 0.5</equation>
+    </equations>
+  </modelType></modelTypes>
+  <systems><system name="S">
+    <instances><instance name="g" type="Quad"/></instances>
+  </system></systems>
+</esml>
